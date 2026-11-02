@@ -1,0 +1,25 @@
+Project Title: Retail Store Weekly Sales Forecasting and Staffing Demand Analysis System
+
+Problem Statement ID: KAGGLE-WALMART-SALES
+
+Registration Number: 12526856
+
+GitHub Repository Link: https://github.com/RehanK09/retail-sales-staffing-forecast
+
+Live Deployed Project Link: DEPLOYMENT PENDING
+
+--- DEPLOYMENT INSTRUCTIONS ---
+To deploy on Streamlit Community Cloud:
+1. Push all project files to https://github.com/RehanK09/retail-sales-staffing-forecast
+   NOTE: Do NOT push data/*.csv or .venv/ (already excluded by .gitignore).
+   The dataset must be placed in data/ after cloning (see README for instructions).
+2. Log into https://share.streamlit.io with your GitHub account.
+3. Click "New app" → select repository "retail-sales-staffing-forecast" → branch "master" → main file: "app.py".
+4. Add any required Secrets (none required for this project).
+5. Click Deploy.
+
+NOTE: Because the Kaggle dataset is not committed to the repository (privacy / size constraints),
+the deployed app requires either:
+  (a) Running train.py locally and committing only models/ and outputs/ directories, OR
+  (b) Adding the data files as Streamlit Cloud Secrets or using a cloud data storage bucket.
+The recommended approach for university submission is to run locally and demonstrate live.

@@ -1,0 +1,52 @@
+{
+  "Linear Regression": {
+    "model_name": "Linear Regression",
+    "overall": {
+      "MAE": 14422.49,
+      "RMSE": 20877.17,
+      "R2": 0.0968,
+      "n": 82832
+    },
+    "holiday": {
+      "MAE": 15155.79,
+      "RMSE": 22163.67,
+      "R2": 0.0971,
+      "n": 2966
+    },
+    "non_holiday": {
+      "MAE": 14395.26,
+      "RMSE": 20827.86,
+      "R2": 0.0968,
+      "n": 79866
+    },
+    "holiday_gap": {
+      "MAE_gap": 760.53,
+      "RMSE_gap": 1335.81
+    }
+  },
+  "Decision Tree": {
+    "model_name": "Decision Tree",
+    "overall": {
+      "MAE": 3352.33,
+      "RMSE": 6265.57,
+      "R2": 0.9186,
+      "n": 82832
+    },
+    "holiday": {
+      "MAE": 3534.25,
+      "RMSE": 6814.26,
+      "R2": 0.9147,
+      "n": 2966
+    },
+    "non_holiday": {
+      "MAE": 3345.58,
+      "RMSE": 6244.27,
+      "R2": 0.9188,
+      "n": 79866
+    },
+    "holiday_gap": {
+      "MAE_gap": 188.67,
+      "RMSE_gap": 569.99
+    }
+  }
+}

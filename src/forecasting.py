@@ -21,9 +21,9 @@ from src.preprocessing import engineer_features
 from src.models import load_all, models_exist
 
 
-# ---------------------------------------------------------------------------
-# Helper: build a feature row for a given store/dept/date
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# [TOPIC: Inference Feature Vector Assembly & Pipeline Alignment]
+# ===========================================================================
 
 def _build_input_row(
     store_id:   int,
@@ -35,33 +35,29 @@ def _build_input_row(
     feature_cols: list[str],
 ) -> np.ndarray:
     """
-    Construct a 2-D numpy array (shape: 1 × len(feature_cols)) representing
-    a single prediction request.
-
-    External features are filled from the nearest historical date
-    for the selected store.
+    Construct a 2D NumPy feature vector (shape: 1 × len(feature_cols)) aligned
+    with the exact training feature schema.
     """
-    # 1. Nearest historical feature row for this store
+    # 1. Fetch nearest known external features for the requested store
     store_feats = features_df[features_df["Store"] == store_id].copy()
     if not store_feats.empty:
         store_feats = store_feats.sort_values("Date")
-        # Use the most recent row that is <= requested date; else earliest row
         past = store_feats[store_feats["Date"] <= date]
         feat_row = past.iloc[-1] if not past.empty else store_feats.iloc[0]
     else:
         feat_row = pd.Series(dtype=float)
 
-    # 2. Store metadata
+    # 2. Extract store metadata
     store_meta = stores_df[stores_df["Store"] == store_id]
     store_type = store_meta["Type"].values[0] if not store_meta.empty else "A"
     store_size = int(store_meta["Size"].values[0]) if not store_meta.empty else 130000
 
-    # 3. Build base row dict
+    # 3. Construct unengineered observation dictionary
     row = {
         "Store":         store_id,
         "Dept":          dept_id,
         "Date":          date,
-        "Weekly_Sales":  0.0,          # placeholder (target column, not used for features)
+        "Weekly_Sales":  0.0,
         "IsHoliday":     is_holiday,
         "Type":          store_type,
         "Size":          store_size,
@@ -78,10 +74,10 @@ def _build_input_row(
 
     df_row = pd.DataFrame([row])
 
-    # 4. Run through the feature engineering function (same as training)
+    # 4. Pass through unified feature engineering pipeline
     df_row = engineer_features(df_row)
 
-    # 5. Keep only the feature columns used during training; fill any extras with 0
+    # 5. Align columns strictly with trained feature schema
     for col in feature_cols:
         if col not in df_row.columns:
             df_row[col] = 0.0
@@ -89,9 +85,9 @@ def _build_input_row(
     return X
 
 
-# ---------------------------------------------------------------------------
-# Public prediction function
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# [TOPIC: Single-Point Supervised Forecasting Inference]
+# ===========================================================================
 
 def predict(
     store_id:   int,
@@ -100,11 +96,8 @@ def predict(
     is_holiday: bool = False,
 ) -> dict:
     """
-    Predict weekly sales for a given store / department / date.
-
-    Returns a dict with:
-      lr_pred: float  — Linear Regression prediction
-      dt_pred: float  — Decision Tree prediction
+    Generate sales predictions for a specific store, department, and week
+    using both Linear Regression and Decision Tree models.
     """
     if not models_exist():
         raise RuntimeError("Trained models not found. Run train.py first.")
@@ -112,7 +105,6 @@ def predict(
     lr_model, dt_model, scaler, feature_cols = load_all()
     stores_df   = load_stores()
     features_df = load_features()
-    # Parse dates in features_df if not already done
     if features_df["Date"].dtype == object:
         features_df["Date"] = pd.to_datetime(features_df["Date"])
 
@@ -132,9 +124,9 @@ def predict(
     }
 
 
-# ---------------------------------------------------------------------------
-# Batch prediction on a range of dates
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# [TOPIC: Multi-Week Horizon Forecasting Pipeline]
+# ===========================================================================
 
 def predict_range(
     store_id:   int,
@@ -144,10 +136,8 @@ def predict_range(
     is_holiday_fn=None,
 ) -> pd.DataFrame:
     """
-    Predict weekly sales from start_date to end_date (weekly frequency).
-
-    is_holiday_fn: callable(date) -> bool  (defaults to always False)
-    Returns a DataFrame with columns: Date, lr_pred, dt_pred
+    Generate weekly sales forecasts sequentially across a date range.
+    Returns a DataFrame with columns: Date, LR_Prediction, DT_Prediction.
     """
     if not models_exist():
         raise RuntimeError("Trained models not found. Run train.py first.")

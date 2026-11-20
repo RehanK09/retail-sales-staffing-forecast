@@ -22,22 +22,27 @@ from sklearn.metrics import (
 )
 
 
-# ---------------------------------------------------------------------------
-# Paths
-# ---------------------------------------------------------------------------
-_ROOT      = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+# ===========================================================================
+# [TOPIC: Evaluation Artifact Storage Configuration]
+# ===========================================================================
+_ROOT       = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 OUTPUTS_DIR = os.path.join(_ROOT, "outputs")
 os.makedirs(OUTPUTS_DIR, exist_ok=True)
 
 RESULTS_PATH = os.path.join(OUTPUTS_DIR, "evaluation_results.json")
 
 
-# ---------------------------------------------------------------------------
-# Core metric function
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# [TOPIC: Regression Metrics Formulation (MAE, RMSE, R² Score)]
+# ===========================================================================
 
 def compute_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
-    """Return dict with MAE, RMSE, R² and sample count."""
+    """
+    Compute standard regression evaluation metrics:
+      - MAE  = (1/n) * sum(|y - y_hat|)
+      - RMSE = sqrt((1/n) * sum((y - y_hat)^2))
+      - R²   = 1 - (sum((y - y_hat)^2) / sum((y - y_bar)^2))
+    """
     n = len(y_true)
     if n == 0:
         return {"MAE": None, "RMSE": None, "R2": None, "n": 0}
@@ -47,9 +52,9 @@ def compute_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
     return {"MAE": round(mae, 2), "RMSE": round(rmse, 2), "R2": round(r2, 4), "n": n}
 
 
-# ---------------------------------------------------------------------------
-# Holiday / non-holiday sub-group evaluation
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# [TOPIC: Subgroup Evaluation & Holiday Performance Gap Analysis]
+# ===========================================================================
 
 def evaluate_model(
     y_true: np.ndarray,
@@ -58,10 +63,12 @@ def evaluate_model(
     model_name: str,
 ) -> dict:
     """
-    Evaluate a model across three groups:
-      - overall
-      - holiday weeks (IsHoliday == True)
-      - non-holiday weeks (IsHoliday == False)
+    Evaluate a model across three distinct subsets:
+      1. Overall Chronological Validation Set
+      2. Holiday Weeks Only (IsHoliday == True)
+      3. Non-Holiday Weeks Only (IsHoliday == False)
+      
+    Computes the holiday error gap: Holiday Error - Non-Holiday Error.
     """
     holiday_mask = is_holiday.astype(bool)
 
@@ -69,7 +76,7 @@ def evaluate_model(
     holiday     = compute_metrics(y_true[holiday_mask],  y_pred[holiday_mask])
     non_holiday = compute_metrics(y_true[~holiday_mask], y_pred[~holiday_mask])
 
-    # Calculate holiday vs non-holiday performance gap
+    # Quantify Holiday vs Non-Holiday Performance Gap
     gap = {}
     for metric in ["MAE", "RMSE"]:
         if holiday[metric] is not None and non_holiday[metric] is not None:
@@ -86,9 +93,9 @@ def evaluate_model(
     }
 
 
-# ---------------------------------------------------------------------------
-# Evaluate both models together
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# [TOPIC: Multi-Model Comparative Evaluation Execution]
+# ===========================================================================
 
 def evaluate_both_models(
     val_df:        pd.DataFrame,
@@ -97,9 +104,8 @@ def evaluate_both_models(
     dt_pred:       np.ndarray,
 ) -> dict:
     """
-    Evaluate Linear Regression and Decision Tree on the validation DataFrame.
-
-    val_df must contain the IsHoliday column for segment evaluation.
+    Evaluate Linear Regression and Decision Tree side-by-side on identical
+    chronological validation data.
     """
     is_holiday = val_df["IsHoliday"].values.astype(bool)
 
@@ -113,28 +119,27 @@ def evaluate_both_models(
     return results
 
 
-# ---------------------------------------------------------------------------
-# Persist results
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# [TOPIC: Evaluation Persistence & Diagnostic Formatting]
+# ===========================================================================
 
 def save_results(results: dict) -> str:
+    """Persist structured evaluation metrics dictionary to JSON."""
     with open(RESULTS_PATH, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2)
     return RESULTS_PATH
 
 
 def load_results() -> dict | None:
+    """Load evaluation metrics JSON file if available."""
     if os.path.exists(RESULTS_PATH):
         with open(RESULTS_PATH, "r", encoding="utf-8") as f:
             return json.load(f)
     return None
 
 
-# ---------------------------------------------------------------------------
-# Pretty printer (CLI use)
-# ---------------------------------------------------------------------------
-
 def print_results(results: dict) -> None:
+    """Format and display validation metrics to CLI."""
     for model_name, res in results.items():
         print(f"\n{'='*60}")
         print(f"  {model_name}")

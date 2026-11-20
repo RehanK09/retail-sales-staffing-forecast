@@ -36,3 +36,4 @@ r3 = load_results()
 print('DT R2:', r3['Decision Tree']['overall']['R2'])
 print('LR R2:', r3['Linear Regression']['overall']['R2'])
 print('ALL CHECKS PASSED')
+

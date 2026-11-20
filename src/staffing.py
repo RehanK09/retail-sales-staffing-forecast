@@ -17,17 +17,17 @@ Defaults are based on standard US retail benchmarks:
 import pandas as pd
 
 
-# ---------------------------------------------------------------------------
-# Default operational assumptions (configurable by user in the dashboard)
-# ---------------------------------------------------------------------------
-DEFAULT_SALES_PER_HOUR   = 300.0   # USD sales per associate-hour
-DEFAULT_HOURS_PER_WEEK   = 40.0    # working hours per FTE per week
-DEFAULT_MIN_STAFF        = 2       # minimum staff regardless of sales level
+# ===========================================================================
+# [TOPIC: Operational Planning Assumptions & Default Benchmarks]
+# ===========================================================================
+DEFAULT_SALES_PER_HOUR   = 300.0   # Benchmark retail productivity (USD sales / associate-hour)
+DEFAULT_HOURS_PER_WEEK   = 40.0    # Full-Time Equivalent (FTE) hours / associate / week
+DEFAULT_MIN_STAFF        = 2       # Minimum operational staffing floor
 
 
-# ---------------------------------------------------------------------------
-# Core calculation
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# [TOPIC: Sales-to-Labor Mathematical Formulation (FTE Staffing Estimation)]
+# ===========================================================================
 
 def estimate_staffing(
     forecasted_sales:   float,
@@ -36,26 +36,12 @@ def estimate_staffing(
     min_staff:          int   = DEFAULT_MIN_STAFF,
 ) -> dict:
     """
-    Estimate weekly staffing requirements from a forecasted sales figure.
-
-    Parameters
-    ----------
-    forecasted_sales : float
-        Forecasted weekly sales in USD (from LR or DT model prediction).
-    sales_per_hour : float
-        Expected USD sales generated per associate-hour worked.
-    hours_per_week : float
-        Standard weekly working hours per full-time-equivalent associate.
-    min_staff : int
-        Minimum number of staff to schedule regardless of forecast.
-
-    Returns
-    -------
-    dict with keys:
-      forecasted_sales, labour_hours, fte_staff, estimated_staff,
-      sales_per_hour, hours_per_week, min_staff
+    Compute weekly staffing demand derived from sales forecast:
+      1. Labour Hours  = Forecasted Sales / Sales per Hour
+      2. FTE Staff     = Labour Hours / Hours per Week
+      3. Recommended   = max(min_staff, round(FTE Staff))
     """
-    # Guard: no negative sales prediction should result in zero staff
+    # Guard against negative returns producing zero staff
     adj_sales = max(0.0, float(forecasted_sales))
 
     labour_hours    = round(adj_sales / sales_per_hour, 1)
@@ -79,9 +65,9 @@ def estimate_staffing(
     }
 
 
-# ---------------------------------------------------------------------------
-# Batch staffing estimates from a forecast DataFrame
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# [TOPIC: Batch Multi-Week Staffing Projections]
+# ===========================================================================
 
 def staffing_from_forecast_df(
     forecast_df:    pd.DataFrame,
@@ -91,11 +77,7 @@ def staffing_from_forecast_df(
     min_staff:      int   = DEFAULT_MIN_STAFF,
 ) -> pd.DataFrame:
     """
-    Apply staffing estimation across every row of a forecast DataFrame.
-
-    Expected columns in forecast_df: Date, LR_Prediction, DT_Prediction
-    Returns the same DataFrame with added columns:
-      Labour_Hours, FTE_Staff, Estimated_Staff
+    Apply staffing estimation across an entire forecasted schedule DataFrame.
     """
     df = forecast_df.copy()
     df["Labour_Hours"]    = (df[sales_col].clip(lower=0) / sales_per_hour).round(1)
@@ -106,12 +88,12 @@ def staffing_from_forecast_df(
     return df
 
 
-# ---------------------------------------------------------------------------
-# Planning recommendation based on forecast level
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# [TOPIC: Operational Staffing Level Heuristic & Policy Recommendations]
+# ===========================================================================
 
 def staffing_recommendation(estimated_staff: int, is_holiday: bool) -> str:
-    """Generate a plain-English staffing recommendation."""
+    """Generate business-logic planning advice based on predicted workforce requirements."""
     holiday_note = " — HOLIDAY WEEK: consider additional coverage." if is_holiday else ""
     if estimated_staff <= 5:
         tier = "Low-volume week. Minimum staffing recommended."

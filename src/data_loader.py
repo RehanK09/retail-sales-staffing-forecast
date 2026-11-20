@@ -9,57 +9,59 @@ import os
 import pandas as pd
 
 
-# ---------------------------------------------------------------------------
-# Paths
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# [TOPIC: Dataset Storage & Path Resolution]
+# ===========================================================================
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DATA_DIR = os.path.join(_ROOT, "data")
 
 
 def _data_path(filename: str) -> str:
+    """Resolve absolute path for files in the data directory."""
     return os.path.join(DATA_DIR, filename)
 
 
-# ---------------------------------------------------------------------------
-# Individual loaders
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# [TOPIC: Individual Dataset Ingestion (Pandas parse_dates)]
+# ===========================================================================
 
 def load_train() -> pd.DataFrame:
-    """Load train.csv and parse the Date column."""
+    """Load train.csv with sales target and parse the Date column."""
     df = pd.read_csv(_data_path("train.csv"), parse_dates=["Date"])
     return df
 
 
 def load_test() -> pd.DataFrame:
-    """Load test.csv (no Weekly_Sales column)."""
+    """Load test.csv (future schedule without Weekly_Sales labels)."""
     df = pd.read_csv(_data_path("test.csv"), parse_dates=["Date"])
     return df
 
 
 def load_stores() -> pd.DataFrame:
-    """Load stores.csv — 45 rows with Store, Type, Size."""
+    """Load stores.csv metadata — 45 rows with Store ID, Type (A,B,C), and Size."""
     return pd.read_csv(_data_path("stores.csv"))
 
 
 def load_features() -> pd.DataFrame:
-    """Load features.csv — store-level weekly external data."""
+    """Load features.csv — store-level weekly external economic and regional data."""
     df = pd.read_csv(_data_path("features.csv"), parse_dates=["Date"])
     return df
 
 
-# ---------------------------------------------------------------------------
-# Master merged loader
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# [TOPIC: Relational Dataset Merging (Left Joins on Store & Date)]
+# ===========================================================================
 
 def load_merged_train() -> pd.DataFrame:
     """
-    Returns a single DataFrame merging train + stores + features.
+    Returns a unified analysis DataFrame merging train + stores + features.
 
-    Join keys:
-      train  LEFT JOIN stores   ON Store
-      result LEFT JOIN features ON [Store, Date]
+    Relational Join Schema:
+      1. train  LEFT JOIN stores   ON Store
+      2. result LEFT JOIN features ON [Store, Date]
 
-    The IsHoliday column from features is dropped (train.csv is authoritative).
+    Note: The duplicate IsHoliday from features.csv is safely dropped
+    because train.csv is the authoritative source for actual sales weeks.
     """
     train    = load_train()
     stores   = load_stores()
@@ -76,22 +78,26 @@ def load_merged_train() -> pd.DataFrame:
     return df
 
 
+# ===========================================================================
+# [TOPIC: Dataset Inspection & Summary Metrics (EDA Statistics)]
+# ===========================================================================
+
 def dataset_summary(df: pd.DataFrame) -> dict:
-    """Return a quick summary dict for the loaded DataFrame."""
+    """Compute high-level statistical and structural summary of the dataset."""
     return {
-        "rows":         len(df),
-        "columns":      len(df.columns),
-        "stores":       df["Store"].nunique(),
-        "departments":  df["Dept"].nunique(),
-        "date_min":     str(df["Date"].min().date()),
-        "date_max":     str(df["Date"].max().date()),
-        "unique_weeks": df["Date"].nunique(),
-        "holiday_rows": int(df["IsHoliday"].sum()),
+        "rows":             len(df),
+        "columns":          len(df.columns),
+        "stores":           df["Store"].nunique(),
+        "departments":      df["Dept"].nunique(),
+        "date_min":         str(df["Date"].min().date()),
+        "date_max":         str(df["Date"].max().date()),
+        "unique_weeks":     df["Date"].nunique(),
+        "holiday_rows":     int(df["IsHoliday"].sum()),
         "non_holiday_rows": int((~df["IsHoliday"]).sum()),
-        "missing_values": df.isnull().sum().to_dict(),
-        "total_sales":  float(df["Weekly_Sales"].sum()),
-        "mean_sales":   float(df["Weekly_Sales"].mean()),
-        "negative_sales": int((df["Weekly_Sales"] < 0).sum()),
+        "missing_values":   df.isnull().sum().to_dict(),
+        "total_sales":      float(df["Weekly_Sales"].sum()),
+        "mean_sales":       float(df["Weekly_Sales"].mean()),
+        "negative_sales":   int((df["Weekly_Sales"] < 0).sum()),
     }
 
 

@@ -20,9 +20,9 @@ from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 
 
-# ---------------------------------------------------------------------------
-# Paths
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# [TOPIC: Model Persistence & Storage Configuration]
+# ===========================================================================
 _ROOT      = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 MODELS_DIR = os.path.join(_ROOT, "models")
 os.makedirs(MODELS_DIR, exist_ok=True)
@@ -33,17 +33,21 @@ SC_PATH  = os.path.join(MODELS_DIR, "scaler.joblib")
 FC_PATH  = os.path.join(MODELS_DIR, "feature_cols.joblib")
 
 
-# ---------------------------------------------------------------------------
-# Model factories
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# [TOPIC: Supervised Learning — Linear Regression (Baseline Parametric Model)]
+# ===========================================================================
 
 def build_linear_regression() -> LinearRegression:
     """
-    Build the Linear Regression baseline model.
+    Construct the Linear Regression baseline model.
     Fitting is performed on scaled features (StandardScaler applied upstream).
     """
     return LinearRegression(n_jobs=-1)
 
+
+# ===========================================================================
+# [TOPIC: Supervised Learning — Decision Tree Regression & Overfitting Control]
+# ===========================================================================
 
 def build_decision_tree(
     max_depth: int = 12,
@@ -51,11 +55,10 @@ def build_decision_tree(
     random_state: int = 42,
 ) -> DecisionTreeRegressor:
     """
-    Build a Decision Tree Regressor with sensible regularisation.
-
-    max_depth=12 allows the tree to model complex seasonal and store-level
-    patterns while avoiding extreme over-fitting.
-    min_samples_leaf=10 prevents very small terminal nodes from fitting noise.
+    Construct Decision Tree Regressor with hyperparameter constraints:
+      - max_depth=12: Restricts tree depth to prevent high-variance memorization.
+      - min_samples_leaf=10: Ensures splits have sufficient statistical support.
+      - random_state=42: Ensures reproducible training.
     """
     return DecisionTreeRegressor(
         max_depth         = max_depth,
@@ -64,36 +67,40 @@ def build_decision_tree(
     )
 
 
-# ---------------------------------------------------------------------------
-# Training
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# [TOPIC: Supervised Model Training Procedures]
+# ===========================================================================
 
 def train_linear_regression(X_scaled: np.ndarray, y: np.ndarray) -> LinearRegression:
+    """Train Linear Regression model on standardized features."""
     model = build_linear_regression()
     model.fit(X_scaled, y)
     return model
 
 
 def train_decision_tree(X: np.ndarray, y: np.ndarray) -> DecisionTreeRegressor:
-    """Decision Tree does not need scaled features."""
+    """Train Decision Tree model on raw (unscaled) features."""
     model = build_decision_tree()
     model.fit(X, y)
     return model
 
 
-# ---------------------------------------------------------------------------
-# Persistence
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# [TOPIC: Model Serialization & Deserialization (Joblib)]
+# ===========================================================================
 
 def save_model(obj, path: str) -> None:
+    """Serialize object to disk using Joblib."""
     joblib.dump(obj, path)
 
 
 def load_model(path: str):
+    """Load serialized object from disk."""
     return joblib.load(path)
 
 
 def save_all(lr_model, dt_model, scaler, feature_cols) -> None:
+    """Persist all trained models, preprocessor, and feature schema."""
     save_model(lr_model,     LR_PATH)
     save_model(dt_model,     DT_PATH)
     save_model(scaler,       SC_PATH)
@@ -102,7 +109,7 @@ def save_all(lr_model, dt_model, scaler, feature_cols) -> None:
 
 
 def load_all():
-    """Load all persisted artifacts. Returns (lr_model, dt_model, scaler, feature_cols)."""
+    """Load all saved model artifacts: (lr_model, dt_model, scaler, feature_cols)."""
     lr_model     = load_model(LR_PATH)
     dt_model     = load_model(DT_PATH)
     scaler       = load_model(SC_PATH)
@@ -111,4 +118,5 @@ def load_all():
 
 
 def models_exist() -> bool:
+    """Check if all required model artifacts exist on disk."""
     return all(os.path.exists(p) for p in [LR_PATH, DT_PATH, SC_PATH, FC_PATH])

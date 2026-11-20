@@ -23,3 +23,4 @@ the deployed app requires either:
   (a) Running train.py locally and committing only models/ and outputs/ directories, OR
   (b) Adding the data files as Streamlit Cloud Secrets or using a cloud data storage bucket.
 The recommended approach for university submission is to run locally and demonstrate live.
+

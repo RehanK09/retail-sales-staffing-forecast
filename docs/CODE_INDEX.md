@@ -1,4 +1,4 @@
-# Topic-Wise Code Directory & Viva Reference Guide
+# Code Directory & Reference Guide
 
 **Course:** CSE252 – Artificial Intelligence and Machine Learning  
 **Project:** Retail Store Weekly Sales Forecasting and Staffing Demand Analysis System  
@@ -6,7 +6,7 @@
 
 ---
 
-This index maps every academic topic in the project to its **exact file**, **function name**, and **line number range**. Use this guide during your project demonstration, viva, and code walk-through.
+This index maps every academic topic in the project to its **exact file**, **function name**, and **line number range**.
 
 ---
 

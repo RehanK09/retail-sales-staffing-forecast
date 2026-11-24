@@ -72,3 +72,8 @@ walmart-recruiting-store-sales-forecasting/
 # Raw Kaggle Datasets (do not commit large dataset CSVs to git)
 data/*.csv
 
+# Local documents and notes
+*.docx
+.txt
+
+
